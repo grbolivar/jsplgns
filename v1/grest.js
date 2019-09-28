@@ -40,32 +40,27 @@ class GRest {
 
 	 @returns {undefined}
 	 */
-	request(method, params) {
-		params.headers = params.headers || {};
-		params.headers['X-Requested-With'] = 'XMLHttpRequest';
+	request(method, p) {
+		p.headers = p.headers || {};
+		p.headers['X-Requested-With'] = 'XMLHttpRequest';
 
 		//auto-token in requests
 		if (typeof this.jwtGetter == "function") {
 			let token = this.jwtGetter();
 			if (token) {
-				params.headers['Authorization'] = token;
+				p.headers['Authorization'] = token;
 			}
 		}
 
 		axios({
 			method: method.toLowerCase(),
-			url: this.url + params.resource,
-			params: params.query || {},
-			data: params.body || {},
-			headers: params.headers
+			url: this.url + p.resource,
+			params: p.query || {},
+			data: p.body || {},
+			headers: p.headers
 		})
-			.then(res => {
-				(params.success || function () { })(res.data);
-			})
-			.catch(e => {
-				(params.error || function () { })(e);
-			})
-			;
+			.then(r => (p.success || function () { })(r.data))
+			.catch(e => (p.error || function () { })(e))
 	}
 
 	/*
@@ -75,9 +70,7 @@ class GRest {
 	get(p, success, error) {
 		if (typeof p == "string") {
 			p = {
-				resource: p,
-				success: success,
-				error: error
+				resource: p, success, error
 			}
 		}
 		this.request("GET", p);
@@ -87,25 +80,19 @@ class GRest {
 	Quick usage mode:
 	post("resource", {data}, (success) => {...}, (error) => {...})
 	*/
-	post(p, data, success, error) {
+	post(p, body, success, error) {
 		if (typeof p == "string") {
 			p = {
-				resource: p,
-				body: data,
-				success: success,
-				error: error
+				resource: p, body, success, error
 			}
 		}
 		this.request("POST", p);
 	}
 
-	put(p, data, success, error) {
+	put(p, body, success, error) {
 		if (typeof p == "string") {
 			p = {
-				resource: p,
-				body: data,
-				success: success,
-				error: error
+				resource: p, body, success, error
 			}
 		}
 		this.request("PUT", p);
@@ -114,9 +101,7 @@ class GRest {
 	delete(p, success, error) {
 		if (typeof p == "string") {
 			p = {
-				resource: p,
-				success: success,
-				error: error
+				resource: p, success, error
 			}
 		}
 		this.request("DELETE", p);
