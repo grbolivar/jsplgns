@@ -40,27 +40,27 @@ class GRest {
 
 	 @returns {undefined}
 	 */
-	request(method, p) {
-		p.headers = p.headers || {};
-		p.headers['X-Requested-With'] = 'XMLHttpRequest';
+	request(method, params) {
+		params.headers = params.headers || {};
+		params.headers['X-Requested-With'] = 'XMLHttpRequest';
 
 		//auto-token in requests
 		if (typeof this.jwtGetter == "function") {
 			let token = this.jwtGetter();
 			if (token) {
-				p.headers['Authorization'] = token;
+				params.headers['Authorization'] = token;
 			}
 		}
 
 		axios({
 			method: method.toLowerCase(),
-			url: this.url + p.resource,
-			params: p.query || {},
-			data: p.body || {},
-			headers: p.headers
+			url: this.url + params.resource,
+			params: params.query || {},
+			data: params.body || {},
+			headers: params.headers
 		})
-			.then(r => (p.success || function () { })(r.data))
-			.catch(e => (p.error || function () { })(e))
+			.then(r => (params.success || function () { })(r.data))
+			.catch(e => (params.error || function () { })(e))
 	}
 
 	/*
