@@ -1,19 +1,21 @@
 /*
- GRest 1.1.0
+ GRest 1.2.0
  RESTful web service wrapper.
  
  DEPENDENCIES:
- axios
+ axios, GObservable
  */
 
-class GRest {
+class GRest extends GObservable {
 
 	/**
-	 @param {String} url The full url of the REST webservice
+	@param {String} url The full url of the REST webservice
 	@param {() : String} jwtGetter? If this function is provided, will call it to get the current JWT Token and auto-append it to a header named "Authorization" on every request.
 	@returns {GRest}
 	*/
 	constructor(url, jwtGetter) {
+		super();
+
 		//normalize the url provided
 		this.url = url.trim().replace(new RegExp("(\/)*$", "m"), "/");
 		this.jwtGetter = jwtGetter;
@@ -41,6 +43,8 @@ class GRest {
 	 @returns {undefined}
 	 */
 	request(method, params) {
+		this.notify(method);
+
 		params.headers = params.headers || {};
 		params.headers['X-Requested-With'] = 'XMLHttpRequest';
 
@@ -59,8 +63,14 @@ class GRest {
 			data: params.body || {},
 			headers: params.headers
 		})
-			.then(r => (params.success || function () { })(r.data))
-			.catch(e => (params.error || function () { })(e))
+			.then(r => {
+				this.notify("/" + method);
+				(params.success || function () { })(r.data);
+			})
+			.catch(e => {
+				this.notify("/" + method);
+				(params.error || function () { })(e);
+			})
 	}
 
 	/*
@@ -89,6 +99,10 @@ class GRest {
 		this.request("POST", p);
 	}
 
+	/*
+	Quick usage mode:
+	put("resource", {data}, (success) => {...}, (error) => {...})
+	*/
 	put(p, body, success, error) {
 		if (typeof p == "string") {
 			p = {
@@ -98,6 +112,10 @@ class GRest {
 		this.request("PUT", p);
 	}
 
+	/*
+	Quick usage mode:
+	delete("resource", (success) => {...}, (error) => {...})
+	*/
 	delete(p, success, error) {
 		if (typeof p == "string") {
 			p = {
