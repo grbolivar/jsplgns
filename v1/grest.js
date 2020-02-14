@@ -1,5 +1,5 @@
 /*
- GRest 1.2.0
+ GRest 1.3.0
  RESTful web service wrapper.
  
  DEPENDENCIES:
@@ -16,7 +16,7 @@ class GRest extends GObservable {
 	constructor(url, jwtGetter) {
 		super();
 
-		//normalize the url provided
+		//normalize the url provided so it ends with /
 		this.url = url.trim().replace(new RegExp("(\/)*$", "m"), "/");
 		this.jwtGetter = jwtGetter;
 	}
@@ -32,7 +32,7 @@ class GRest extends GObservable {
 	 
 	 ((Mixed response)=>{}) success: callback on success
 	 
-	 ((Object error)=>{})? error: callback on error
+	 ((Object fail)=>{})? fail: callback on fail
 	 
 	 Object? query: object literal with key:value pairs to pass as query params
 
@@ -69,18 +69,18 @@ class GRest extends GObservable {
 			})
 			.catch(e => {
 				this.notify("/" + method);
-				(params.error || function () { })(e);
+				(params.fail || function () { })(e);
 			})
 	}
 
 	/*
 	Quick usage mode:
-	get("resource/12345", (success) => {...}, (error) => {...})
+	get("resource/12345", (success) => {...}, (fail) => {...})
 	*/
-	get(p, success, error) {
+	get(p, success, fail) {
 		if (typeof p == "string") {
 			p = {
-				resource: p, success, error
+				resource: p, success, fail
 			}
 		}
 		this.request("GET", p);
@@ -88,40 +88,144 @@ class GRest extends GObservable {
 
 	/*
 	Quick usage mode:
-	post("resource", {data}, (success) => {...}, (error) => {...})
+	post("resource", data?, (success) => {...}, (fail) => {...})
 	*/
-	post(p, body, success, error) {
-		if (typeof p == "string") {
-			p = {
-				resource: p, body, success, error
-			}
-		}
-		this.request("POST", p);
+	post(p, body, success, fail) {
+		this._postPut("POST", p, body, success, fail)
 	}
 
 	/*
 	Quick usage mode:
-	put("resource", {data}, (success) => {...}, (error) => {...})
+	put("resource", {data}, (success) => {...}, (fail) => {...})
 	*/
-	put(p, body, success, error) {
+	put(p, body, success, fail) {
+		this._postPut("PUT", p, body, success, fail)
+	}
+
+	_postPut(method, p, body, success, fail) {
 		if (typeof p == "string") {
 			p = {
-				resource: p, body, success, error
+				resource: p, body, success, fail
 			}
 		}
-		this.request("PUT", p);
+		this.request(method, p);
 	}
 
 	/*
 	Quick usage mode:
-	delete("resource", (success) => {...}, (error) => {...})
+	delete("resource", (success) => {...}, (fail) => {...})
 	*/
-	delete(p, success, error) {
+	delete(p, success, fail) {
 		if (typeof p == "string") {
 			p = {
-				resource: p, success, error
+				resource: p, success, fail
 			}
 		}
 		this.request("DELETE", p);
 	}
+};
+
+
+
+
+class GRestEndpoint {
+
+	constructor(id, gRest) {
+		//normalize the endpoint id so it ends with /
+		this.id = id.trim().replace(new RegExp("(\/)*$", "m"), "/");;
+		this.rest = gRest;
+	}
+
+	/*
+	For more customized requests, see GRest methods
+	*/
+	request(method, o) {
+		o.resource = this.id;
+		this.rest[method](o);
+	}
+
+	get(query, callback) {
+		this._getDel('get', query, callback);
+	}
+
+	delete(query, callback) {
+		this._getDel('delete', query, callback);
+	}
+
+	_getDel(method, query, callback) {
+		let type = typeof query;
+
+		//get("?query=string", fn)
+		if (type == "string" || type == "number") {
+			this.rest[method](this.id + query, callback, callback)
+		}
+
+		//get({ query: string }, fn)
+		else if (type == "object") {
+			this.request(method, {
+				query,
+				success: callback,
+				error: callback
+			})
+		}
+
+		//get(fn)
+		else if (type == "function") {
+			this.request(method, {
+				success: query,
+				error: query
+			})
+		}
+	}
+
+	post(query, data, callback) {
+		this._postPut("post", query, data, callback);
+	}
+
+	put(query, data, callback) {
+		this._postPut("put", query, data, callback);
+	}
+
+	_postPut(method, query, data, callback) {
+		let type = typeof query;
+
+		//post("?query=string", data?, fn)
+		if (type == "string" || type == "number") {
+			this.rest[method](this.id + query, data, callback, callback)
+		}
+
+		//post({ query: string }, data!, fn)
+		else if (type == "object" && typeof data == "object") {
+			this.request(method, {
+				query,
+				body: data,
+				success: callback,
+				error: callback
+			});
+		}
+
+		//post(data?, fn)
+		else if (type == "object") {
+			this.request(method, {
+				body: query,
+				success: data,
+				error: data
+			});
+		}
+
+		//post(fn)
+		else if (type == "function") {
+			this.request(method, {
+				success: query,
+				error: query
+			});
+		}
+	}
+
+
+	//Ignores keys with null
+	static obj2QueryString(o){
+		return Object.keys(o).filter(k => o[k] != null).map(k => k + "=" + o[k]).join("&")
+	}
+
 };
