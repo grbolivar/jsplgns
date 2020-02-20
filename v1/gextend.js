@@ -45,19 +45,15 @@ Element.byTag = function (tag) {
 };
 
 Element.addClass = function (obj, cls) {
-	if (!obj) {
-		return;
-	}
-	if (obj.className.indexOf(cls) < 0) {
+	cls = cls.trim();
+	if (!obj.className.split(" ").includes(cls)) {
 		obj.className += " " + cls;
 	}
 };
 
 Element.removeClass = function (obj, cls) {
-	if (!obj) {
-		return;
-	}
-	obj.className = obj.className.replace(cls, "").trim();
+	cls = cls.trim();
+	obj.className = obj.className.split(" ").filter(e => e != cls).join(" ");
 };
 
 Object.clone = function (obj) {
