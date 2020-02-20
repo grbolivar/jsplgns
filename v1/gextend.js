@@ -28,6 +28,10 @@ Array.unique = function (arr) {
 	return arr.filter((elem, pos, arr) => arr.indexOf(elem) === pos);
 };
 
+Array.clone = function(arr){
+	return Array.from(arr);
+};
+
 Number.random = function (min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 };
@@ -57,6 +61,8 @@ Element.removeClass = function (obj, cls) {
 };
 
 Object.clone = function (obj) {
+	if(Array.isArray(obj)) return Array.clone(obj);
+
 	let clone = new Object();
 
 	for (var key in obj) {
